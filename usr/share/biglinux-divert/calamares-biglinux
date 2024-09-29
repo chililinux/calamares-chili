@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+#shellcheck disable=SC2155,SC2034,SC1135
+#shellcheck source=/dev/null
+
+#  /usr/share/biglinux-divert/calamares-biglinux
+#  Description: Big Store installing programs for BigLinux
+#
+#  Created: 2020/01/11
+#  Altered: 2024/08/21
+#
+#  Copyright (c) 2023-2024, Vilmar Catafesta <vcatafesta@gmail.com>
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#  1. Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+#  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+#  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+#  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+#  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+#  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+#  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+APP="${0##*/}"
+_VERSION_="1.0.0-20240821"
+#
+LIBRARY=${LIBRARY:-'/usr/share/bigbashview/bcc/shell'}
+[[ -f "${LIBRARY}/bcclib.sh" ]] && source "${LIBRARY}/bcclib.sh"
+[[ -f "${LIBRARY}/tinilib.sh" ]] && source "${LIBRARY}/tinilib.sh"
+
+f_usr_bin_calamares="/usr/bin/calamares"
+
+function sh_create_usr_bin_calamares() {
+	cat >"$f_usr_bin_calamares" <<-'EOF'
+#!/usr/bin/env bash
+ruscherrelease="$(awk -F'=' '/RELEASE/ {print $2}' /etc/big-release)"
+if [[ -n "$(grep development /etc/big-release)" ]]; then
+  windowID="$(xprop -root '\t$0' _NET_ACTIVE_WINDOW | cut -f 2)"
+  sleep 600 | zenity \
+    --attach="$windowID" \
+    --width=300 \
+    --progress \
+    --title=$"Please wait..." \
+    --pulsate \
+    --no-cancel \
+    --auto-close \
+    --text $"Updating the Installer..." &
+
+  # wait for key generation to finish
+  #while [[ -n "$(top -b -d1 n1 | grep gpg$)" ]]; do
+  #  sleep 0.5
+  #done
+
+  # Aguarda a geração da chave terminar
+  while pgrep -x gpg >/dev/null; do
+    sleep 0.5
+  done
+
+  if ! sudo pacman -Sy calamares-biglinux --noconfirm --needed; then
+    #a instalação falhou
+    killall zenity
+    zenity \
+      --error \
+      --width=300 \
+      --title="Internet" \
+      --text $"No Internet connection..."
+    sudo killall python3
+    exit 1
+  else
+    #a instalação foi bem-sucedida.
+    killall zenity
+  fi
+fi
+/usr/bin/calamares-biglinux "$@"
+EOF
+}
+
+function check_file_type() {
+	local cfile="$1"
+
+	if grep -q 'script' < <(file -i "$cfile"); then
+		echo "script"
+	elif grep -q 'ELF' < <(file -i "$cfile"); then
+		echo "binary"
+	elif grep -q 'executable' < <(file -i "$cfile"); then
+		echo "binary"
+	else
+		echo "other"
+	fi
+}
+
+#if test -e "$f_usr_bin_calamares"; then
+#	if ! grep -q 'shellscript' < <(file -i "$f_usr_bin_calamares"); then
+#		mv -f "$f_usr_bin_calamares" /usr/bin/calamares-manjaro
+#		#cp /usr/bin/calamares-biglinux "$f_usr_bin_calamares"
+#		sh_create_usr_bin_calamares "$@"
+#		chmod +x "$f_usr_bin_calamares"
+#	fi
+#else
+#	sh_create_usr_bin_calamares "$@"
+#	chmod +x "$f_usr_bin_calamares"
+#fi
+
+# verifica se o arquivo '/usr/bin/calamares' é um binario do pacote 'calamares' do manjaro
+# é possível que o arquivo já tenha sido substituido/atualizado por um script do pacote 'calamares-biglinux'
+if [[ "$(check_file_type "$f_usr_bin_calamares")" == 'binary' ]]; then
+	mv -f "$f_usr_bin_calamares" /usr/bin/calamares-manjaro
+fi
+
+sh_create_usr_bin_calamares "$@"
+chmod +x "$f_usr_bin_calamares"
+rm -f /usr/share/applications/calamares.desktop
+echo $(($(date +%s) / 86400)) >/usr/share/bigbashview/apps/calamares/install_date

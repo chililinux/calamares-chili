@@ -1,0 +1,822 @@
+#!/usr/bin/env bash
+#shellcheck disable=SC2155,SC2034
+#shellcheck source=/dev/null
+
+#  /usr/bin/calamares-biglinux
+#  Description: Big Store installing programs for BigLinux
+#
+#  Created: 2020/01/11
+#  Altered: qua 25 set 2024 21:14:05 -04
+#
+#  Copyright (c) 2023-2024, Vilmar Catafesta <vcatafesta@gmail.com>
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#  1. Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+#  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+#  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+#  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+#  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+#  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+#  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+APP="${0##*/}"
+_VERSION_="1.0.2-20240925"
+#
+LIBRARY=${LIBRARY:-'/usr/share/bigbashview/bcc/shell'}
+[[ -f "${LIBRARY}/bcclib.sh" ]] && source "${LIBRARY}/bcclib.sh"
+[[ -f "${LIBRARY}/tinilib.sh" ]] && source "${LIBRARY}/tinilib.sh"
+
+detect_distro_path() {
+  # Define o diretório base onde as distribuições são montadas
+  local base_dir="/run/miso/bootmnt"
+  local distro_dir
+  local distro
+
+  # Tenta encontrar o diretório da distribuição dentro do diretório base
+  for distro_dir in "$base_dir"/*/x86_64/; do
+    # Verifica se o caminho é um diretório e segue o padrão esperado
+    if [ -d "$distro_dir" ]; then
+      # Extrai o nome da distribuição a partir do caminho
+      distro=$(basename $(dirname "$distro_dir"))
+
+      # Verifica se o nome da distribuição é válido
+      if [[ "$distro" != "x86_64" ]]; then
+        # Retorna o caminho completo encontrado
+        echo "$distro_dir"
+        break
+      fi
+    fi
+  done
+
+  # Caso não encontre nenhum diretório válido, retorna o default e foda-se
+  if [ -z "$distro" ]; then
+    echo '/run/miso/bootmnt/manjaro/x86_64/'
+  fi
+}
+export -f detect_distro_path
+
+function sh_calamares_biglinux_config() {
+	#Translation
+	#LANGUAGE=$LANG:en
+	export TEXTDOMAINDIR="/usr/share/locale"
+	export TEXTDOMAIN=calamares-biglinux
+	#
+	declare -g public_verify_local=0
+	declare -g path_iso="$(detect_distro_path)"
+	declare -g local_path_iso="$path_iso"
+	declare -g ctesteLocal=$'Teste local foi finalizado com sucesso!'
+	declare -g Information=$"Informação"
+	declare -g Message=$'Verificando o arquivo:'
+	declare -g Message2=$'Verificando erros de download ou de unidade USB. Isso pode levar alguns minutos...'
+	declare -g Verification_canceled=$'Verificação canceleda.'
+	declare -g The_files_are_intact=$'Os arquivos estão intactos.'
+	declare -g Checking_system_integrity=$'Verificando a integridade do sistema...'
+	declare -g ctextVerify2=$"ERRO de acesso ao executar o instalador!
+Não é possível acessar arquivos para teste de integridade em: $path_iso
+Está rodando o instalador numa ISO live?
+Se sim, tente reiniciar o sistema/instalador."
+	declare -g Continue=$'Continuar'
+	declare -g Close=$'Fechar'
+	declare -g Open=$'Abrir'
+	declare -g Outdated_version=$'Versão desatualizada'
+	declare -g Please_wait=$'Por favor, aguarde...'
+	declare -g Checking_the_integrity=$'Verificando a integridade do dispositivo de download e armazenamento...'
+	declare -g Closing_file=$'Fechando arquivo...'
+	declare -g Send_to_the_cloud=$'Envie para a nuvem'
+	declare -g Install_the_system=$'Instalar o sistema'
+	declare -g Sending_please_wait=$'Enviando, por favor aguarde…..'
+	declare -g Do_you_want_to_view=$"\nDeseja visualizar ou enviar o arquivo de log de instalação para a nuvem?\nGere um link para enviar em grupos de suporte.\n"
+	declare -g TEXT_01=$"Deseja prosseguir com a instalação no modo EFI?"
+	declare -g TEXT_02=$"A inicialização atual está usando o modo <span color='#CC2222'>EFI</span>, mas não encontrei nenhuma partição EFI neste computador.
+
+Se este computador já possui outro sistema instalado e você pretende
+mantê-lo instalado, você provavelmente precisará alterar a
+configuração no BIOS para inicializar no modo Legacy, também
+chamado modo BIOS."
+	declare -g TEXT_03=$"Deseja prosseguir com a instalação no modo Legacy/BIOS?"
+	declare -g TEXT_04=$"A inicialização atual está usando o modo <span color='#CC2222'>Legacy/BIOS</span>, mas encontrei pelo menos uma partição EFI neste computador.
+
+Para que a instalação seja bem-sucedida, você provavelmente precisará
+alterar a configuração no BIOS para inicializar no modo EFI ou UEFI."
+}
+export -f sh_calamares_biglinux_config
+
+function sh_calamares_biglinux_get_timezone() {
+	# Detecta o fuso horário usando ipinfo.io
+	timezone=$(curl -s https://ipinfo.io/timezone)
+
+	# Mapeia o fuso horário para uma configuração de linguagem
+	case $timezone in
+	"America/Sao_Paulo" | "America/Fortaleza" | "America/Recife" | "America/Bahia" | "America/Porto_Velho")
+		LANGUAGE="pt_BR"
+		;;
+	"America/New_York" | "America/Chicago" | "America/Denver" | "America/Los_Angeles")
+		LANGUAGE="en_US"
+		;;
+	"Europe/Paris" | "Europe/Brussels" | "Europe/Luxembourg")
+		LANGUAGE="fr_FR"
+		;;
+	"Europe/Berlin" | "Europe/Vienna" | "Europe/Zurich")
+		LANGUAGE="de_DE"
+		;;
+	"Asia/Tokyo")
+		LANGUAGE="ja_JP"
+		;;
+	"Asia/Seoul")
+		LANGUAGE="ko_KR"
+		;;
+	"Asia/Shanghai" | "Asia/Chongqing" | "Asia/Urumqi" | "Asia/Hong_Kong")
+		LANGUAGE="zh_CN"
+		;;
+	# Adicione mais fusos horários e suas respectivas linguagens aqui
+	*)
+		LANGUAGE="en_US" # Padrão se o fuso horário não estiver mapeado
+		;;
+	esac
+
+	# Define a variável LANGUAGE
+	LANG=$LANGUAGE
+	export LANGUAGE
+	export LANG
+	source /usr/bin/big-locale-config "$LANGUAGE"
+}
+export -f sh_calamares_biglinux_get_timezone
+
+function sh_calamares_biglinux_check_limit() {
+	#	local param_limit="$1"
+	#	local grace_time="$2"
+	local param_limit
+	local grace_time=30
+	local verify_limit=0
+	local param_local
+
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+		--limit)
+			param_limit="$1"
+			grace_time="$2"
+			verify_limit=1
+			shift # past argument
+			shift # past value
+			;;
+		--local)
+			param_local="$1"
+			local_path_iso="$2"
+			public_verify_local=1
+			shift # past argument
+			shift # past value
+			;;
+		*)
+			shift # unknown option
+			;;
+		esac
+	done
+
+	# Testa se o parâmetro --local foi fornecido e se o valor é um diretório válido
+	if [[ $public_verify_local -eq 1 ]]; then
+		if [[ -n "$local_path_iso" ]]; then
+			if [[ ! -d "$local_path_iso" ]]; then
+				local_path_iso="$path_iso"
+			else
+				path_iso="$local_path_iso"
+			fi
+		else
+			local_path_iso="$path_iso"
+		fi
+	fi
+
+	# se é para testar localmente os arquivos, desnecessário mostar exibir mensagem de limit, se caso
+	if ((public_verify_local)); then
+		return
+	fi
+
+	# Verifica se tem parâmetro '--limit'
+	if [[ "$param_limit" == '--limit' ]]; then
+		verify_limit=1
+
+		# Verifica se grace_time é um número válido
+		if [[ ! "$grace_time" =~ ^-?[0-9]+$ ]]; then
+			grace_time=30 # Define um valor padrão se não for um número válido
+		fi
+	fi
+
+	# verifica se foi definido um limite como parametro
+	if ((verify_limit)); then
+		# Obtém o timestamp atual em dias desde a época UNIX
+		current_day=$(($(date +%s) / 86400))
+
+		# Obtém o timestamp do arquivo, também em dias desde a época UNIX
+		release_day=$(grep 'UNIX_TIMESTAMP=' /etc/big-release | cut -d '=' -f2)
+
+		# dias passados desde instalacao
+		days_until_today=$((current_day - release_day))
+
+		#				--field=$"<b>Do you want to proceed with the installation of this old version anyway?</b>
+		#    :LBL" \
+
+		# Calcula a diferença
+		if ((current_day > release_day + "$grace_time")); then
+			# if the ISO was generated more than 30 days ago, issue ALERT
+			declare -g ctextReleaseOld=$"BigLinux é um sistema com atualizações semanais e esta versão foi lançada há mais de $days_until_today dias.
+Recomendamos baixar uma versão mais recente.
+\nDeseja continuar com a instalação desta versão antiga mesmo assim?"
+			log_info "${red}${APP} - $ctextReleaseOld"
+			if ! yad --image=emblem-warning \
+				--image-on-top \
+				--form \
+				--width=500 \
+				--height=100 \
+				--fixed \
+				--align=center \
+				--text "$ctextReleaseOld" \
+				--button="${Continue}":0 \
+				--button="${Close}":1 \
+				--center \
+				--on-top \
+				--borders=20 \
+				--title="$Outdated_version" \
+				--window-icon=emblem-warning; then
+				exit 1
+			fi
+		fi
+	fi
+}
+export -f sh_calamares_biglinux_check_limit
+
+function sh_calamares_biglinux_send() {
+	sudo -u "$user" \
+		curl --data-binary \
+		-H "filename: /home/$user/calamares.log" https://filebin.net |
+		tee "/home/$user/transfer.url" |
+		zenity \
+			--modal \
+			--progress \
+			--pulsate \
+			--no-cancel \
+			--auto-close \
+			--text "${Sending_please_wait}"
+
+	if [[ -e /usr/bin/falkon ]]; then
+		#					sudo -u $user falkon https://filebin.net/$(cat "/home/$user/transfer.url" | grep '"id": "' | cut -f4 -d'"')
+		sudo -u "$user" falkon https://filebin.net/"$(awk -F'"' '/"id": "/ {print $4}' "/home/$user/transfer.url")"
+	elif [[ -e /usr/bin/brave ]]; then
+		#					sudo -u $user brave-browser --new-window --no-sandbox https://filebin.net/$(cat "/home/$user/transfer.url" | grep '"id": "' | cut -f4 -d'"')
+		sudo -u "$user" brave-browser --new-window --no-sandbox https://filebin.net/"$(awk -F'"' '/"id": "/ {print $4}' "/home/$user/transfer.url")"
+	fi
+}
+export -f sh_calamares_biglinux_send
+
+function sh_calamares_biglinux_verify_md5sum() {
+	local f_md5sum_ErrorCode='/tmp/md5sum_big_fail'
+	local f_md5sum_ErrorFileName='/tmp/md5sum_ErrorFileName'
+	local squashfiles=('desktopfs' 'livefs' 'mhwdfs' 'rootfs')
+	local cfile
+	local verify
+	local nErrorCode
+	local cErrorFilename
+	declare -i count=0
+
+	[[ -e "$f_md5sum_ErrorCode" ]] && rm -f "$f_md5sum_ErrorCode"
+	[[ -e "$f_md5sum_ErrorFileName" ]] && rm -f "$f_md5sum_ErrorFileName"
+	if cd "$path_iso" >/dev/null 2>&-; then
+		log_info "${green}${APP} - ${Checking_system_integrity}${reset}"
+		(
+			for cfile in "${squashfiles[@]}"; do
+				if ! md5sum --status -c "${cfile}".md5; then
+					echo 1 >"$f_md5sum_ErrorCode"
+					echo "$cfile" >"$f_md5sum_ErrorFileName"
+					break
+				fi
+				((count += 25))
+				printf "%s\n" "$count"
+				printf "%s\n" "# $Message2 \n\n $Message ${path_iso}/${cfile}.sfs"
+			done
+			sleep 1
+		) |
+			zenity \
+				--auto-close \
+				--progress \
+				--title="$Checking_system_integrity" \
+				--text="$Message2" \
+				--percentage=0
+
+		# Captura o código de saída do zenity
+		verify="$?"
+	else
+		# não conseguiu entrar no diretorio dos arquivos de squash
+		# provável montagem em outro local ou outro erro
+		verify=2
+	fi
+
+	# Lê o conteúdo do arquivo /tmp/md5sum_big_fail
+	[[ -e "$f_md5sum_ErrorCode" ]] && nErrorCode="$(<$f_md5sum_ErrorCode)"
+	[[ -e "$f_md5sum_ErrorFileName" ]] && cErrorFilename="${path_iso}/$(<$f_md5sum_ErrorFileName).sfs"
+
+	# Verifica o código de saída e o conteúdo do arquivo
+	if [[ "$verify" -eq -1 ]] || [[ "$nErrorCode" == "1" ]]; then
+		log_err "${red}${APP} - error: md5sum fail, file: ${cyan}$cErrorFilename${reset}"
+		zenity \
+			--error \
+			--text=$"Erro de integridade no arquivo: ${cErrorFilename} \n \
+\n 1 - Tente reiniciar o instalador. \
+\n 2 - Tente reiniciar/reiniciar novamente. \
+\n 3 - Baixe o sistema novamente e/ou use outro drive USB."
+		return 1
+	elif [[ "$verify" -eq 0 ]]; then
+		# Mostra uma mensagem por 3 segundos e depois continua instalação
+		log_msg "${green}${APP} - md5sum test $The_files_are_intact"
+		local ctext=""
+		if ((public_verify_local)); then
+			ctext+="${ctesteLocal}"
+		fi
+		ctext+="$The_files_are_intact"
+#		zenity \
+#			--info \
+#			--text="${ctext}" \
+#			--timeout=3
+		function show_progress_with_cancel() {
+			(
+				for i in $(seq 0 100); do
+					echo "$i"                                                                            # Atualiza o percentual da barra de progresso
+					echo "# Tempo restante para prosseguir com a instalação: $((5 - (i / 20))) segundos" # Atualiza a mensagem com tempo restante
+					sleep 0.05                                                                           # Atualiza a cada 30 milissegundos
+				done
+			) | zenity --progress --title="$ctext" --text="Aguarde..." --width=300 --auto-close &
+			progress_pid=$!
+			# Aguarda o usuário fechar o diálogo de progresso
+			wait $progress_pid
+		}
+		# Exibe o diálogo de progresso
+		show_progress_with_cancel
+		return 0
+	elif [[ "$verify" -eq 2 ]]; then
+		# Mostra mensagem que não conseguiu testar os arquivos squashfs
+		log_msg "${red}${APP} - error: md5sum test $ctextVerify2"
+		zenity \
+			--info \
+			--text="$ctextVerify2"
+		return 1
+	else
+		log_msg "${red}${APP} - md5sum $Verification_canceled"
+		zenity \
+			--info \
+			--text="$Verification_canceled."
+		echo 1 >$f_md5sum_ErrorCode
+		return 1
+	fi
+}
+export -f sh_calamares_biglinux_verify_md5sum
+
+function sh_calamares_biglinux_wait_verify_md5sum() {
+	# aguarda o teste com md5sum
+	if pgrep -x "biglinux-verify" >/dev/null; then
+		windowID="$(xprop -root '\t$0' _NET_ACTIVE_WINDOW | cut -f 2)"
+		sleep 600 | zenity \
+			--attach="$windowID" \
+			--width=300 \
+			--progress \
+			--title="$Please_wait" \
+			--pulsate \
+			--no-cancel \
+			--auto-close \
+			--text "$Checking_the_integrity" &
+	fi
+	while pgrep -x "biglinux-verify" >/dev/null; do
+		sleep 1
+	done
+	killall zenity
+}
+export -f sh_calamares_biglinux_wait_verify_md5sum
+
+function sh_calamares_biglinux_main() {
+	local params="$@"
+
+	sh_calamares_biglinux_get_timezone
+	sh_calamares_biglinux_check_limit "$@"
+	sh_calamares_biglinux_wait_verify_md5sum
+
+	# Verifica se o arquivo de verificação de checksum não existe
+	if [[ ! -e "/tmp/checksum_biglinux_ok.html" ]]; then
+		# Executa a verificação de MD5
+		if ! sh_calamares_biglinux_verify_md5sum; then
+			exit 1
+		fi
+	fi
+
+	# somente testar o md5sum dos arquivos? então encerra o instalador
+	if ((public_verify_local)); then
+		exit
+	fi
+
+	# desabilita a troca/swap no(s) disco(s)
+	blkid | awk -F: '/TYPE="swap"/ && $0 !~ /zram/ {print $1}' | while read -r diskswap; do
+		swapoff "$diskswap"
+	done
+
+	if test -e /usr/share/calamares/branding/biglinux/show.qml; then
+		if [ "${LANG:0:2}" = "pt" ]; then
+			sed -i 's|pt/|pt/|g' /usr/share/calamares/branding/biglinux/show.qml
+		elif [ "${LANG:0:2}" = "es" ]; then
+			sed -i 's|pt/|es/|g' /usr/share/calamares/branding/biglinux/show.qml
+		else
+			sed -i 's|pt/|en/|g' /usr/share/calamares/branding/biglinux/show.qml
+		fi
+	else
+		log_err "${red}${APP} - error: File not found: ${cyan}/usr/share/calamares/branding/biglinux/show.qml${reset}"
+	fi
+
+	if [[ ! -f "/etc/calamares/biglinux" ]]; then
+		# Simplify welcome
+		echo '---
+showSupportUrl:         false
+showKnownIssuesUrl:     false
+showReleaseNotesUrl:    false
+
+requirements:
+    internetCheckUrl: https://google.com
+    requiredStorage:    4
+    requiredRam:        0.5
+    check:
+      - storage
+      - ram
+      - power
+      - internet
+      - root
+    required:
+      - storage
+      - ram
+      - root
+
+geoip:
+    style:    "none"
+    url:      "https://geoip.kde.org/v1/ubiquity"
+    selector: "CountryCode"
+      ' >/etc/calamares/modules/welcome.conf
+
+		# Force btrfs compression using zstd
+		sed -i '/filesystem: btrfs/!b; :a; n; /^\s\{6\}options:/ s/defaults.*/defaults, noatime, compress-force=zstd:9 ]\n      ssdOptions: [ discard=async ]\n      hddOptions: [ autodefrag ]/; ta' /usr/share/calamares/modules/mount.conf
+
+		# btrfs: defaults,noatime,autodefrag,compress=zstd
+		#sed -i 's|btrfs: defaults|btrfs: defaults,noatime,compress=zstd|g' /usr/share/calamares/modules/fstab.conf
+		#sed -i 's|btrfs: discard=async,ssd|#btrfs: discard=async,ssd|g' /usr/share/calamares/modules/fstab.conf
+		#sed -i 's|ssdExtraMountOptions:|#ssdExtraMountOptions:|g' /usr/share/calamares/modules/fstab.conf
+
+		# Use btrfs for default
+		sed -i 's|defaultFileSystemType.*"ext4"|defaultFileSystemType:  "btrfs"|g' /usr/share/calamares/modules/partition.conf
+
+		# Change initcpio to systemd
+		#sed -i 's|"base", "udev"|"systemd"|g' /usr/lib/calamares/modules/initcpiocfg/main.py
+
+		# Clean initcpio
+		#sed -i 's|, "keyboard", "keymap", "consolefont"||g' /usr/lib/calamares/modules/initcpiocfg/main.py
+
+		# Change initcpio plymouth to sd version
+		sed -i 's|"plymouth"|"kms plymouth"|g' /usr/lib/calamares/modules/initcpiocfg/main.py
+
+		# not disable pacman-init
+		# sed -i '/^disable:/,$d' /usr/share/calamares/modules/services.conf
+
+		# failsafe if services not generated in boot
+		# Conta o número de linhas e verifica se é menor que 15
+		if [[ $(wc -l </etc/calamares/modules/services.conf) -lt 15 ]]; then
+			echo 'services:
+    - name: bluetooth
+      mandatory: false
+
+    - name: cronie
+      mandatory: false
+
+    - name: ModemManager
+      mandatory: false
+
+    - name: NetworkManager
+      mandatory: false
+
+    - name: cups
+      mandatory: false
+
+    - name: haveged
+      mandatory: false
+
+    - name: fstrim.timer
+      mandatory: false
+
+    - name: pkgfile-update.timer
+      mandatory: false
+
+    - name: vboxservice
+      mandatory: false
+
+    - name: ufw
+      mandatory: false
+
+    - name: nmb
+      mandatory: false
+
+    - name: smb
+      mandatory: false
+
+    - name: set-cfs-tweaks
+      mandatory: false
+
+    - name: dnsmasq
+      mandatory: false
+
+    - name: cups-browsed
+      mandatory: false
+
+    - name: sddm
+      mandatory: false
+
+targets:
+    - name: "graphical"
+      mandatory: true
+
+disable:
+    - name: pacman-init
+      mandatory: false' >/etc/calamares/modules/services.conf
+
+		fi
+		sed -i 's|timers:||g' /etc/calamares/modules/services.conf
+
+		echo "
+---
+defaultGroups:
+    - cdrom
+    - floppy
+    - audio
+    - dip
+    - video
+    - plugdev
+    - netdev
+    - lpadmin
+    - scanner
+    - bluetooth
+    - vboxsf
+    - sambashare
+    - input
+    - scard
+    - lp
+    - network
+    - power
+    - sys
+    - wheel
+autologinGroup:  autologin
+doAutologin:     false
+sudoersGroup:    wheel
+setRootPassword: false
+doReusePassword: false
+availableShells: /bin/bash, /bin/zsh
+avatarFilePath:  ~/.face
+userShell:       /bin/bash
+passwordRequirements:
+    nonempty: true" >/etc/calamares/modules/users.conf
+
+		echo '---
+keyrings:
+    - archlinux
+    - manjaro
+    - biglinux' >/etc/calamares/modules/postcfg.conf
+
+		#sed -i 's|initialSwapChoice: none|initialSwapChoice: small|g' /etc/calamares/modules/partition.conf
+
+		# General configuration
+		echo '---
+modules-search: [ local ]
+
+sequence:
+    - show:
+        - welcome
+        - locale
+        - keyboard
+        - partition
+        - users
+        - summary
+    - exec:
+        - partition
+        - mount
+        - unpackfs
+        - networkcfg
+        - machineid
+        - fstab
+        - locale
+        - keyboard
+        - localecfg
+        - luksopenswaphookcfg
+        - luksbootkeyfile
+        - initcpiocfg
+        - initcpio
+        - users
+        - displaymanager
+        - mhwdcfg
+        - hwclock
+        - services
+        - grubcfg
+        - bootloader
+        - grubcfg-fix
+        - postcfg
+        - btrfs-fix
+        - umount
+    - show:
+        - finished
+
+branding: biglinux
+
+prompt-install: true
+
+dont-chroot: false
+oem-setup: false
+disable-cancel: false
+disable-cancel-during-exec: false
+quit-at-end: false' >/etc/calamares/settings.conf
+
+		touch /etc/calamares/biglinux
+	fi
+
+	# Disable pacman-key populate
+	sed -i -e '/init_keyring/s/^/#/' -e '/self.populate_keyring/s/^/#/' /usr/lib/calamares/modules/postcfg/main.py
+
+	#save EFI partitions
+	rm -f /tmp/efi-partitions >/dev/null 2>&-
+	mkdir -p /boot/efi >/dev/null 2>&-
+
+	#	# Uso desnecessário de echo, awk, e grep: Isso pode ser substituído por uma abordagem mais direta.
+	#	# Evitar sub-shells sempre que possível: Substituir processos externos como grep, sed, e awk por funcionalidades internas do Bash pode melhorar o desempenho.
+	#	# Evitar readlink -f: Dependendo do contexto, pode não ser necessário resolver links simbólicos.
+	#	DEVICE_LIVE_BOOT_TMP="$(readlink -f "$(df -h /run/miso/bootmnt/ | awk '{ print $1 }' | grep '/dev/')" | sed 's|/dev/||'g)"
+	#	if [[ "$(echo "$DEVICE_LIVE_BOOT_TMP" | grep dm)" != "" ]]; then
+	#		DEVICE_LIVE_BOOT="$(ls /sys/block/${DEVICE_LIVE_BOOT_TMP}/slaves | sed 's|[0-9]||g')"
+	#	else
+	#		DEVICE_LIVE_BOOT="$DEVICE_LIVE_BOOT_TMP"
+	#	fi
+
+	#	for i in $(LC_ALL=C fdisk -l | grep -e "EFI System" -e "FAT" | cut -f1 -d" " | grep -v "$DEVICE_LIVE_BOOT"); do
+	#		umount -l /boot/efi >/dev/null 2>&-
+	#		mount "$i" /boot/efi >/dev/null 2>&-
+	#		if [ -d /boot/efi/EFI ]; then
+	#			echo "$i" >>/tmp/efi-partitions
+	#		fi
+	#		umount -l /boot/efi >/dev/null 2>&-
+	#	done
+
+	#	# Umount partitions
+	#	for i in $(blkid | grep -v 'TYPE="swap"' | grep -v 'TYPE="squashfs"' | grep -v '^/dev/sr0' | cut -f1 -d":"); do
+	#		umount "$i" >/dev/null 2>&-
+	#	done
+
+	# Extrai o nome do dispositivo sem o prefixo /dev/
+	DEVICE_LIVE_BOOT_TMP=$(basename "$(df --output=source /run/miso/bootmnt/ | tail -n 1)")
+	# Verifica se o dispositivo é um 'device mapper'
+	if [[ "$DEVICE_LIVE_BOOT_TMP" =~ dm ]]; then
+		# Obtém o dispositivo subjacente se for um 'device mapper'
+		DEVICE_LIVE_BOOT=$(basename "$(find /sys/block/"${DEVICE_LIVE_BOOT_TMP}"/slaves -type l | head -n 1)" | sed 's|[0-9]||g')
+	else
+		DEVICE_LIVE_BOOT="$DEVICE_LIVE_BOOT_TMP"
+	fi
+
+	LC_ALL=C fdisk -l | awk '/EFI System|FAT/ {print $1}' | grep -v "$DEVICE_LIVE_BOOT" | while read -r i; do
+		umount -l /boot/efi >/dev/null 2>&1
+		mount "$i" /boot/efi >/dev/null 2>&1
+		if [[ -d /boot/efi/EFI ]]; then
+			echo "$i" >>/tmp/efi-partitions
+		fi
+		umount -l /boot/efi >/dev/null 2>&1
+	done
+
+	# Desmontar partições
+	blkid | awk -F: '!/TYPE="swap"/ && !/TYPE="squashfs"/ && !/^\/dev\/sr0/ {print $1}' | while read -r i; do
+		umount "$i" >/dev/null 2>&1
+	done
+
+	# boot EFI without partition EFI
+	#	if [[ -d /sys/firmware/efi ]] && [[ "$(cat /tmp/efi-partitions)" = "" ]]; then
+	if [[ -d /sys/firmware/efi ]] && [[ ! -s /tmp/efi-partitions ]]; then
+		# Execute o código quando o sistema está em UEFI e o arquivo está vazio
+		LIVEBOOT=EFI
+		PARTITION=LEGACY
+		if ! yad \
+			--image=drive-harddisk \
+			--image-on-top \
+			--form \
+			--width=500 \
+			--height=100 \
+			--fixed \
+			--align=center \
+			--field="<b>$TEXT_01</b>:LBL" \
+			--text "$TEXT_02" \
+			--button=${Continue}!gtk-apply:0 \
+			--button="${Close}"!gtk-cancel:1 \
+			--center \
+			--on-top \
+			--borders=20 \
+			--title="${Install_the_system}" \
+			--window-icon='/usr/share/icons/hicolor/scalable/apps/icon-big-hd-install.svg'; then
+			exit
+		fi
+		# legacy boot and EFI partition
+		#	elif [[ ! -d /sys/firmware/efi ]] && [[ "$(cat /tmp/efi-partitions)" != "" ]]; then
+	elif [[ ! -d /sys/firmware/efi ]] && [[ -s /tmp/efi-partitions ]]; then
+		# Execute o código quando o sistema não está em UEFI e o arquivo não está vazio
+		LIVEBOOT=LEGACY
+		PARTITION=EFI
+		if ! yad \
+			--image=drive-harddisk \
+			--image-on-top \
+			--form \
+			--width=500 \
+			--height=100 \
+			--fixed \
+			--align=center \
+			--field="<b>$TEXT_03</b>:LBL" \
+			--text "$TEXT_04" \
+			--button="${Continue}"!gtk-apply:0 \
+			--button="${Close}"!gtk-cancel:1 \
+			--center \
+			--on-top \
+			--borders=20 \
+			--title="${Install_the_system}" \
+			--window-icon='/usr/share/icons/hicolor/scalable/apps/icon-big-hd-install.svg'; then
+			exit
+		fi
+	fi
+
+	rm -f /tmp/start_calamares
+
+	cd /usr/share/bigbashview/apps/calamares/ || {
+		log_err "${red}${APP} - erro: falha ao executar o bigbashview em: /usr/share/bigbashview/apps/calamares/index.html"
+		exit
+	}
+	bigbashview \
+		-s 1100x600 \
+		-n $"Install System" \
+		-p bbv-calamares \
+		-c transparent \
+		-w frameless \
+		index.html
+
+	# Iniciar calamares
+	if [[ -e "/tmp/start_calamares" ]]; then
+		if [[ -e /usr/share/biglinux/themes/biglinux/.config/kdeglobals ]]; then
+			cp -f /usr/share/biglinux/themes/biglinux/.config/kdeglobals /root/.config/kdeglobals
+		fi
+		sudo QT_QUICK_BACKEND=software /usr/bin/calamares-manjaro
+
+		# Calamares não conseguiu instalar
+		#		if [[ "$(grep -w completion /root/.cache/calamares/session.log | grep -v bash-completion | rev | cut -d ":" -f1 | rev | sed 's/^[ \t]*//;s/[ \t]*$//')" != "succeeded" ]]; then
+		if [[ "$(grep -w completion /root/.cache/calamares/session.log | grep -v bash-completion | awk -F':' '{gsub(/^[ \t]+|[ \t]+$/, "", $NF); print $NF}')" != "succeeded" ]]; then
+			user=$(ls /home)
+			cp /root/.cache/calamares/session.log /home/"$user"/calamares.log
+			chown "$user":"$user" /home/"$user"/calamares.log
+
+			yad \
+				--buttons-layout=center \
+				--width=480 \
+				--button=${Open}:1 \
+				--button="${Send_to_the_cloud}":2 \
+				--button="${Close}":3 \
+				--title='calamares LOG' \
+				--text="${Do_you_want_to_view}"
+
+			case $? in
+			1) sudo -u "$user" kate /home/"$user"/calamares.log ;;
+			2) sh_calamares_biglinux_send ;;
+			3) echo "${Closing_file}" ;;
+			esac
+		fi
+	fi
+}
+export -f sh_calamares_biglinux_main
+
+usage() {
+	cat <<-EOF
+		${cyan}Most used commands:
+		${red}  --limit <dias>   ${reset}- Especifica (em dias), um aviso de limite de expiração da ISO
+		${red}  --local <dir>    ${reset}- Somente testa a mídia de instalação, especificando o diretório <dir> onde estão estão localizadas.
+		${red}  --version        ${reset}- Imprime informações de versão do app
+		${red}  --help           ${reset}- Exibe este ajuda
+	EOF
+}
+
+sh_calamares_biglinux_config
+[[ "$1" = @(-H|-h|help|-help|--help) ]] && {
+  usage
+  exit $(($# ? 0 : 1))
+}
+[[ "$1" = @(-V|-v|version|-version|--version) ]] && {
+	orange=$(tput setaf 166)
+	printf "%s\n" "${orange}${0##*/} v${_VERSION_}"
+	exit $(($# ? 0 : 1))
+}
+sh_calamares_biglinux_main "$@"
