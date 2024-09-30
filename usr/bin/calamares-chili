@@ -2,8 +2,8 @@
 #shellcheck disable=SC2155,SC2034
 #shellcheck source=/dev/null
 
-#  /usr/bin/calamares-biglinux
-#  Description: Big Store installing programs for BigLinux
+#  /usr/bin/calamares-chili
+#  Description: Calamares install programs for ChiliLinux
 #
 #  Created: 2020/01/11
 #  Altered: qua 25 set 2024 21:14:05 -04
@@ -67,11 +67,11 @@ detect_distro_path() {
 }
 export -f detect_distro_path
 
-function sh_calamares_biglinux_config() {
+function sh_calamares_chili_config() {
 	#Translation
 	#LANGUAGE=$LANG:en
 	export TEXTDOMAINDIR="/usr/share/locale"
-	export TEXTDOMAIN=calamares-biglinux
+	export TEXTDOMAIN=calamares-chili
 	#
 	declare -g public_verify_local=0
 	declare -g path_iso="$(detect_distro_path)"
@@ -111,9 +111,9 @@ chamado modo BIOS."
 Para que a instalação seja bem-sucedida, você provavelmente precisará
 alterar a configuração no BIOS para inicializar no modo EFI ou UEFI."
 }
-export -f sh_calamares_biglinux_config
+export -f sh_calamares_chili_config
 
-function sh_calamares_biglinux_get_timezone() {
+function sh_calamares_chili_get_timezone() {
 	# Detecta o fuso horário usando ipinfo.io
 	timezone=$(curl -s https://ipinfo.io/timezone)
 
@@ -152,9 +152,9 @@ function sh_calamares_biglinux_get_timezone() {
 	export LANG
 	source /usr/bin/big-locale-config "$LANGUAGE"
 }
-export -f sh_calamares_biglinux_get_timezone
+export -f sh_calamares_chili_get_timezone
 
-function sh_calamares_biglinux_check_limit() {
+function sh_calamares_chili_check_limit() {
 	#	local param_limit="$1"
 	#	local grace_time="$2"
 	local param_limit
@@ -229,7 +229,7 @@ function sh_calamares_biglinux_check_limit() {
 		# Calcula a diferença
 		if ((current_day > release_day + "$grace_time")); then
 			# if the ISO was generated more than 30 days ago, issue ALERT
-			declare -g ctextReleaseOld=$"BigLinux é um sistema com atualizações semanais e esta versão foi lançada há mais de $days_until_today dias.
+			declare -g ctextReleaseOld=$"ChiliLinux é um sistema com atualizações semanais e esta versão foi lançada há mais de $days_until_today dias.
 Recomendamos baixar uma versão mais recente.
 \nDeseja continuar com a instalação desta versão antiga mesmo assim?"
 			log_info "${red}${APP} - $ctextReleaseOld"
@@ -253,9 +253,9 @@ Recomendamos baixar uma versão mais recente.
 		fi
 	fi
 }
-export -f sh_calamares_biglinux_check_limit
+export -f sh_calamares_chili_check_limit
 
-function sh_calamares_biglinux_send() {
+function sh_calamares_chili_send() {
 	sudo -u "$user" \
 		curl --data-binary \
 		-H "filename: /home/$user/calamares.log" https://filebin.net |
@@ -276,9 +276,9 @@ function sh_calamares_biglinux_send() {
 		sudo -u "$user" brave-browser --new-window --no-sandbox https://filebin.net/"$(awk -F'"' '/"id": "/ {print $4}' "/home/$user/transfer.url")"
 	fi
 }
-export -f sh_calamares_biglinux_send
+export -f sh_calamares_chili_send
 
-function sh_calamares_biglinux_verify_md5sum() {
+function sh_calamares_chili_verify_md5sum() {
 	local f_md5sum_ErrorCode='/tmp/md5sum_big_fail'
 	local f_md5sum_ErrorFileName='/tmp/md5sum_ErrorFileName'
 	local squashfiles=('desktopfs' 'livefs' 'mhwdfs' 'rootfs')
@@ -377,11 +377,11 @@ function sh_calamares_biglinux_verify_md5sum() {
 		return 1
 	fi
 }
-export -f sh_calamares_biglinux_verify_md5sum
+export -f sh_calamares_chili_verify_md5sum
 
-function sh_calamares_biglinux_wait_verify_md5sum() {
+function sh_calamares_chili_wait_verify_md5sum() {
 	# aguarda o teste com md5sum
-	if pgrep -x "biglinux-verify" >/dev/null; then
+	if pgrep -x "chili-verify" >/dev/null; then
 		windowID="$(xprop -root '\t$0' _NET_ACTIVE_WINDOW | cut -f 2)"
 		sleep 600 | zenity \
 			--attach="$windowID" \
@@ -393,24 +393,24 @@ function sh_calamares_biglinux_wait_verify_md5sum() {
 			--auto-close \
 			--text "$Checking_the_integrity" &
 	fi
-	while pgrep -x "biglinux-verify" >/dev/null; do
+	while pgrep -x "chili-verify" >/dev/null; do
 		sleep 1
 	done
 	killall zenity
 }
-export -f sh_calamares_biglinux_wait_verify_md5sum
+export -f sh_calamares_wait_verify_md5sum
 
-function sh_calamares_biglinux_main() {
+function sh_calamares_main() {
 	local params="$@"
 
-	sh_calamares_biglinux_get_timezone
-	sh_calamares_biglinux_check_limit "$@"
-	sh_calamares_biglinux_wait_verify_md5sum
+	sh_calamares_get_timezone
+	sh_calamares_check_limit "$@"
+	sh_calamares_wait_verify_md5sum
 
 	# Verifica se o arquivo de verificação de checksum não existe
 	if [[ ! -e "/tmp/checksum_biglinux_ok.html" ]]; then
 		# Executa a verificação de MD5
-		if ! sh_calamares_biglinux_verify_md5sum; then
+		if ! sh_calamares_verify_md5sum; then
 			exit 1
 		fi
 	fi
@@ -425,16 +425,16 @@ function sh_calamares_biglinux_main() {
 		swapoff "$diskswap"
 	done
 
-	if test -e /usr/share/calamares/branding/biglinux/show.qml; then
+	if test -e /usr/share/calamares/branding/chili/show.qml; then
 		if [ "${LANG:0:2}" = "pt" ]; then
-			sed -i 's|pt/|pt/|g' /usr/share/calamares/branding/biglinux/show.qml
+			sed -i 's|pt/|pt/|g' /usr/share/calamares/branding/chili/show.qml
 		elif [ "${LANG:0:2}" = "es" ]; then
-			sed -i 's|pt/|es/|g' /usr/share/calamares/branding/biglinux/show.qml
+			sed -i 's|pt/|es/|g' /usr/share/calamares/branding/chili/show.qml
 		else
-			sed -i 's|pt/|en/|g' /usr/share/calamares/branding/biglinux/show.qml
+			sed -i 's|pt/|en/|g' /usr/share/calamares/branding/chili/show.qml
 		fi
 	else
-		log_err "${red}${APP} - error: File not found: ${cyan}/usr/share/calamares/branding/biglinux/show.qml${reset}"
+		log_err "${red}${APP} - error: File not found: ${cyan}/usr/share/calamares/branding/chili/show.qml${reset}"
 	fi
 
 	if [[ ! -f "/etc/calamares/biglinux" ]]; then
@@ -809,7 +809,7 @@ usage() {
 	EOF
 }
 
-sh_calamares_biglinux_config
+sh_calamares_chili_config
 [[ "$1" = @(-H|-h|help|-help|--help) ]] && {
   usage
   exit $(($# ? 0 : 1))

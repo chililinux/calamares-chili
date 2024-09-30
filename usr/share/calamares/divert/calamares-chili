@@ -2,7 +2,7 @@
 #shellcheck disable=SC2155,SC2034,SC1135
 #shellcheck source=/dev/null
 
-#  /usr/share/biglinux-divert/calamares-biglinux
+#  /usr/share/calamares/divert/calamares-chili
 #  Description: Big Store installing programs for BigLinux
 #
 #  Created: 2020/01/11
@@ -112,7 +112,7 @@ function check_file_type() {
 #fi
 
 # verifica se o arquivo '/usr/bin/calamares' é um binario do pacote 'calamares' do manjaro
-# é possível que o arquivo já tenha sido substituido/atualizado por um script do pacote 'calamares-biglinux'
+# é possível que o arquivo já tenha sido substituido/atualizado por um script do pacote 'calamares-chili'
 if [[ "$(check_file_type "$f_usr_bin_calamares")" == 'binary' ]]; then
 	mv -f "$f_usr_bin_calamares" /usr/bin/calamares-manjaro
 fi

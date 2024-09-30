@@ -6,6 +6,6 @@ Operation = Upgrade
 Target = *
 
 [Action]
-Description = Change calamares to biglinux
+Description = Change calamares to Chililinux
 When = PostTransaction
-Exec = /usr/share/biglinux-divert/calamares-biglinux
+Exec = /usr/share/calamares/divert/calamares-chili
