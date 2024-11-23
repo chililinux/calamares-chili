@@ -1,0 +1,11 @@
+[Trigger]
+Type = File
+Operation = Install
+Operation = Upgrade
+#Target = usr/bin/calamares
+Target = *
+
+[Action]
+Description = Change calamares to biglinux
+When = PostTransaction
+Exec = /usr/share/biglinux-divert/calamares-biglinux

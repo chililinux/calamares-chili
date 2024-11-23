@@ -1,13 +1,13 @@
 # Maintainer: Vilmar Catafesta <vcatafesta@gmail.com>
 
-pkgname=chili-calamares
-pkgdesc="Calamares tweaks for Chililinux, like using btrfs+zstd for default"
+pkgname=calamares-chili
+pkgdesc="Calamares tweaks to ChiliLinux, like using btrfs+zstd for default"
 depends=('bbv-framework' 'bigcontrolcenter-base')
 #makedepends=('')
 #optdepends=('')
-#conflicts=('')
-#provides=('')
-#replaces=('')
+conflicts=('calamares-biglinux')
+provides=('calamares-biglinux')
+replaces=('calamares-biglinux')
 pkgver=$(date +%y.%m.%d)
 pkgrel=$(date +%H%M)
 arch=('any')
@@ -71,6 +71,6 @@ package() {
 }
 
 pre_remove() {
-  mv -f /usr/bin/calamares /usr/bin/calamares-chili
+  mv -f /usr/bin/calamares /usr/bin/calamares-biglinux
   mv -f /usr/bin/calamares-manjaro /usr/bin/calamares
 }
