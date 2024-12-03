@@ -2,10 +2,9 @@
 Type      = File
 Operation = Install
 Operation = Upgrade
-#Target   = usr/bin/calamares
-Target    = *
+Target    = usr/bin/calamares
 
 [Action]
-Description = Chili Change calamares to Chililinux
+Description = ChiliLinux Change calamares to Chililinux
 When        = PostTransaction
 Exec        = /usr/share/calamares/divert/calamares-chili
