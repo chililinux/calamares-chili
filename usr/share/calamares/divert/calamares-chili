@@ -43,7 +43,22 @@ f_usr_bin_calamares="/usr/bin/calamares"
 function sh_create_usr_bin_calamares() {
 	cat >"$f_usr_bin_calamares" <<-'EOF'
 #!/usr/bin/env bash
-if [[ -n "$(grep development /etc/chili-release)" ]]; then
+
+# Lista de arquivos a testar
+files_release=(
+  /etc/big-release
+  /etc/chili-release
+  /etc/manjaro-release
+)
+
+# Verifica cada arquivo na lista
+for file_release in "${files_release[@]}"; do
+  if [[ -f "$file" ]]; then
+    break
+  fi
+done
+
+if [[ -n "$(grep development "$file_release")" ]]; then
   windowID="$(xprop -root '\t$0' _NET_ACTIVE_WINDOW | cut -f 2)"
   sleep 600 | zenity \
     --attach="$windowID" \

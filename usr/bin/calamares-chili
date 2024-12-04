@@ -217,8 +217,24 @@ function sh_calamares_chili_check_limit() {
 		# Obtém o timestamp atual em dias desde a época UNIX
 		current_day=$(($(date +%s) / 86400))
 
-		# Obtém o timestamp do arquivo, também em dias desde a época UNIX
-		release_day=$(grep 'UNIX_TIMESTAMP=' /etc/chili-release | cut -d '=' -f2)
+    # Lista de arquivos a testar
+    files=(
+      /etc/big-release
+      /etc/chili-release
+      /etc/manjaro-release
+    )
+    release_day=""
+
+    # Verifica cada arquivo na lista
+    for file in "${files[@]}"; do
+      if [[ -f "$file" ]]; then
+    		# Obtém o timestamp do arquivo, também em dias desde a época UNIX
+        release_day=$(grep 'UNIX_TIMESTAMP=' "$file" | cut -d '=' -f2)
+        if [[ -n "$release_day" ]]; then
+          break
+        fi
+      fi
+    done
 
 		# dias passados desde instalacao
 		days_until_today=$((current_day - release_day))
