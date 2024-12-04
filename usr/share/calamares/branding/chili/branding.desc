@@ -1,5 +1,5 @@
 ---
-componentName:           chililinux
+componentName:           chili
 welcomeStyleCalamares:   true
 welcomeExpandingLogo:    true
 windowSize:              1024px,735px
@@ -19,9 +19,9 @@ strings:
 images:
     productLogo:         "logo.svg"
     productIcon:         "/usr/share/icons/hicolor/scalable/apps/icon-big-hd-install.svg"
-    productWelcome:      "big-welcome.svg"
+    productWelcome:      "chililinux.png"
 
-slideshow:               "pong.qml"
+slideshow:               "mines.qml"
 slideshowAPI:            1
 
 style:
