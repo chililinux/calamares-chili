@@ -1,21 +1,20 @@
 ---
-componentName:           biglinux
+componentName:           chililinux
 welcomeStyleCalamares:   true
 welcomeExpandingLogo:    true
-windowSize:         1024px,735px
-
+windowSize:              1024px,735px
 
 strings:
-    productName:         BigLinux
-    shortProductName:    BigLinux
+    productName:         ChiliLinux
+    shortProductName:    ChiliLinux
     version:             1
     shortVersion:        1
-    versionedName:       BigLinux
-    shortVersionedName:  BigLinux
-    bootloaderEntryName: BigLinux
-    productUrl:          https://www.biglinux.com.br
-    supportUrl:          https://www.biglinux.com.br
-    releaseNotesUrl:     https://www.biglinux.com.br
+    versionedName:       ChiliLinux
+    shortVersionedName:  ChiliLinux
+    bootloaderEntryName: ChiliLinux
+    productUrl:          https://chililinux.com
+    supportUrl:          https://chililinux.com
+    releaseNotesUrl:     https://chililinux.com
 
 images:
     productLogo:         "logo.svg"

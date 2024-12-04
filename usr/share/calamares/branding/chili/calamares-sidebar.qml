@@ -139,7 +139,7 @@ Rectangle {
       }
       
       // Label {
-      //     text: "BigLinux"
+      //     text: "ChiliLinux"
       //     font.pointSize: 16
       //     font.family: "Comfortaa"
       //     color: Branding.styleString(Branding.SidebarText)

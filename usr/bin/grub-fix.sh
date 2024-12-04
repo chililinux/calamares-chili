@@ -3,7 +3,6 @@
 #shellcheck source=/dev/null
 
 #  /usr/bin/grub-fix.sh
-#  Description: Big Store installing programs for BigLinux
 #
 #  Created: 2020/01/11
 #  Altered: 2024/08/19
@@ -39,21 +38,9 @@ LIBRARY=${LIBRARY:-'/usr/share/bigbashview/bcc/shell'}
 [[ -f "${LIBRARY}/tinilib.sh" ]] && source "${LIBRARY}/tinilib.sh"
 
 function sh_grub-fix_sh_main() {
-#  misobasedir=$(grep -oP 'misobasedir=\K\S+' /run/miso/bootmnt/boot/grub/kernels.cfg | head -n 1)
-#  misolabel=$(grep -oP 'misolabel=\K\S+' /run/miso/bootmnt/boot/grub/kernels.cfg | head -n 1)
-
-#  [[ -z "$misobasedir" ]] && misobasedir='manjaro'
-#  [[ -z "$misolabel"   ]] && misolabel='BIGLINUXLIVE'
-#  theme="$misobasedir"
-
-#	sed -i "s|GRUB_CMDLINE_LINUX_DEFAULT='|GRUB_CMDLINE_LINUX_DEFAULT='$(sed 's|BOOT_IMAGE=/boot/vmlinuz-x86_64 ||g;s| driver=nonfree||g;s| driver=free||g;s| rdinit=/vtoy/vtoy||g;s| quiet splash||g' /proc/cmdline) |g" $*
-#	sed -i "s|BOOT_IMAGE=/boot/vmlinuz-x86_64||g;s|misobasedir=$misobasedir misolabel=$misolabel ||g" $*
-#	sed -i "s|GRUB_THEME=.*|GRUB_THEME=\"/boot/grub/themes/$misobasedir/theme.txt\"|g" $*
-#	sed -i 's|GRUB_SAVEDEFAULT=true|GRUB_SAVEDEFAULT=false|g;s|quiet quiet|quiet|g' $*
-
   sed -i "s|GRUB_CMDLINE_LINUX_DEFAULT='|GRUB_CMDLINE_LINUX_DEFAULT='$(sed 's|BOOT_IMAGE=/boot/vmlinuz-x86_64 ||g;s| driver=nonfree||g;s| driver=free||g;s| rdinit=/vtoy/vtoy||g;s| quiet splash||g' /proc/cmdline) |g" $*
-  sed -i 's|BOOT_IMAGE=/boot/vmlinuz-x86_64||g;s|misobasedir=manjaro misolabel=BIGLINUXLIVE ||g' $*
-  sed -i 's|GRUB_THEME=.*|GRUB_THEME="/boot/grub/themes/biglinux/theme.txt"|g' $*
+  sed -i 's|BOOT_IMAGE=/boot/vmlinuz-x86_64||g;s|misobasedir=manjaro misolabel=CHILILINUX_LIVE ||g' $*
+  sed -i 's|GRUB_THEME=.*|GRUB_THEME="/boot/grub/themes/chili/theme.txt"|g' $*
   sed -i 's|GRUB_SAVEDEFAULT=true|GRUB_SAVEDEFAULT=false|g;s|quiet quiet|quiet|g' $*
 
 	if ! grep -q GRUB_EARLY_INITRD_LINUX_STOCK $*; then
@@ -80,17 +67,12 @@ function sh_grub-fix_sh_main() {
 		echo "[Last]
     Session=/usr/share/xsessions/plasma.desktop" >$(echo "$*" | sed 's|etc/default/grub|var/lib/sddm/state.conf|g')
 	fi
-	# sed -i "s|Session=plasma.desktop|Session=plasma-biglinux-x11.desktop|g" $(echo "$*" | sed 's|etc/default/grub|etc/sddm.conf|g')
 
 	# use compress-force=zstd:5 in / and not number in all other
 	sed -i -e '/\s\/\s/ s/zstd:9/zstd:5/' -e '/\s\/\s/! s/zstd:9/zstd/' $(echo "$*" | sed 's|etc/default/grub|/etc/fstab|g')
 
 	# Save default KDE configuration
 	cp -f "/etc/big_desktop_changed" $(echo "$*" | sed 's|etc/default/grub|/etc/big_desktop_changed|g')
-
-	# if [ -e "/tmp/use_disable_fsync" ]; then
-	#     echo '/usr/$LIB/disable-fsync.so' > $(echo "$*" | sed 's|etc/default/grub|etc/ld.so.preload|g')
-	# fi
 	cp -f /tmp/big_desktop_theme $(echo "$*" | sed 's|etc/default/grub|etc/default-theme-biglinux|g')
 }
 export -f sh_grub-fix_sh_main

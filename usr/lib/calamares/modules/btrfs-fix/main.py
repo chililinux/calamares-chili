@@ -20,8 +20,6 @@
 #   You should have received a copy of the GNU General Public License
 #   along with Calamares. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Bruno Goncalves ( www.biglinux.com.br )
-#
 
 import libcalamares
 import os
@@ -29,7 +27,6 @@ import shutil
 import subprocess
 import sys
 from libcalamares.utils import check_target_env_call, debug
-
 
 
 def run():

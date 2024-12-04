@@ -2,7 +2,7 @@
 
 #Translation
 export TEXTDOMAINDIR="/usr/share/locale"
-export TEXTDOMAIN=calamares-biglinux
+export TEXTDOMAIN=calamares-chili
 
 detect_distro_path() {
   # Define o diretório base onde as distribuições são montadas
@@ -36,7 +36,7 @@ export -f detect_distro_path
 declare -g path_iso="$(detect_distro_path)"
 declare -g local_path_iso="$path_iso"
 
-touch /tmp/biglinux-wait-install
+touch /tmp/chili-wait-install
 OIFS=$IFS
 IFS=$'\n'
 rm -f /tmp/start_calamares
@@ -165,9 +165,9 @@ instances:
   module:   shellprocess
   config:   shellprocess_initialize_pacman.conf
 
-- id:       displaymanager_biglinux
+- id:       displaymanager_chili
   module:   shellprocess
-  config:   shellprocess_displaymanager_biglinux.conf
+  config:   shellprocess_displaymanager_chili.conf
 
 sequence:
     - show:
@@ -192,7 +192,7 @@ if [ "$use_custom_desktop" = "yes" ]; then
 echo '        - shellprocess@initialize_pacman
         - packages' >> /etc/calamares/settings.conf
     if [ "$login_manager" != "" ]; then
-        echo '        - shellprocess@displaymanager_biglinux' >> /etc/calamares/settings.conf
+        echo '        - shellprocess@displaymanager_chili' >> /etc/calamares/settings.conf
     fi
 fi
 
@@ -220,7 +220,7 @@ echo '        - localecfg
     - show:
         - finished
 
-branding: biglinux
+branding: chili
 
 prompt-install: true
 
@@ -275,7 +275,7 @@ dontChroot: false
 
 script:
  - "pacman-key --init"
- - command: "pacman-key --populate archlinux manjaro biglinux"
+ - command: "pacman-key --populate archlinux manjaro biglinux community chili"
    timeout: 1200
 
 i18n:
@@ -291,7 +291,7 @@ script:
  - \"systemctl enable $login_manager\"
 
 i18n:
- name: \"Enable login manager\"" > /etc/calamares/modules/shellprocess_displaymanager_biglinux.conf
+ name: \"Enable login manager\"" > /etc/calamares/modules/shellprocess_displaymanager_chili.conf
 
 IFS=$OIFS
 

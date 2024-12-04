@@ -3,7 +3,6 @@
 #shellcheck source=/dev/null
 
 #  /usr/bin/only-calamares
-#  Description: Big Store installing programs for BigLinux
 #
 #  Created: 2020/01/11
 #  Altered: 2024/08/19

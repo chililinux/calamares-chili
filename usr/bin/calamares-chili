@@ -6,7 +6,7 @@
 #  Description: Calamares install programs for ChiliLinux
 #
 #  Created: 2020/01/11
-#  Altered: qua 25 set 2024 21:14:05 -04
+#  Altered: ter 03 dez 2024 22:25:10 -04
 #
 #  Copyright (c) 2023-2024, Vilmar Catafesta <vcatafesta@gmail.com>
 #  All rights reserved.
@@ -32,7 +32,7 @@
 #  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 APP="${0##*/}"
-_VERSION_="1.0.2-20240925"
+_VERSION_="1.0.3-20241203"
 #
 LIBRARY=${LIBRARY:-'/usr/share/bigbashview/bcc/shell'}
 [[ -f "${LIBRARY}/bcclib.sh" ]] && source "${LIBRARY}/bcclib.sh"
@@ -218,7 +218,7 @@ function sh_calamares_chili_check_limit() {
 		current_day=$(($(date +%s) / 86400))
 
 		# Obtém o timestamp do arquivo, também em dias desde a época UNIX
-		release_day=$(grep 'UNIX_TIMESTAMP=' /etc/big-release | cut -d '=' -f2)
+		release_day=$(grep 'UNIX_TIMESTAMP=' /etc/chili-release | cut -d '=' -f2)
 
 		# dias passados desde instalacao
 		days_until_today=$((current_day - release_day))
@@ -255,7 +255,7 @@ Recomendamos baixar uma versão mais recente.
 }
 export -f sh_calamares_chili_check_limit
 
-function sh_calamares_chili_send() {
+function sh_calamares_send() {
 	sudo -u "$user" \
 		curl --data-binary \
 		-H "filename: /home/$user/calamares.log" https://filebin.net |
@@ -276,7 +276,7 @@ function sh_calamares_chili_send() {
 		sudo -u "$user" brave-browser --new-window --no-sandbox https://filebin.net/"$(awk -F'"' '/"id": "/ {print $4}' "/home/$user/transfer.url")"
 	fi
 }
-export -f sh_calamares_chili_send
+export -f sh_calamares_send
 
 function sh_calamares_chili_verify_md5sum() {
 	local f_md5sum_ErrorCode='/tmp/md5sum_big_fail'
@@ -408,7 +408,7 @@ function sh_calamares_main() {
 	sh_calamares_wait_verify_md5sum
 
 	# Verifica se o arquivo de verificação de checksum não existe
-	if [[ ! -e "/tmp/checksum_biglinux_ok.html" ]]; then
+	if [[ ! -e "/tmp/checksum_chili_ok.html" ]]; then
 		# Executa a verificação de MD5
 		if ! sh_calamares_verify_md5sum; then
 			exit 1
@@ -437,7 +437,7 @@ function sh_calamares_main() {
 		log_err "${red}${APP} - error: File not found: ${cyan}/usr/share/calamares/branding/chili/show.qml${reset}"
 	fi
 
-	if [[ ! -f "/etc/calamares/biglinux" ]]; then
+	if [[ ! -f "/etc/calamares/chili" ]]; then
 		# Simplify welcome
 		echo '---
 showSupportUrl:         false
@@ -588,7 +588,9 @@ passwordRequirements:
 keyrings:
     - archlinux
     - manjaro
-    - biglinux' >/etc/calamares/modules/postcfg.conf
+    - biglinux
+    - community
+    - chili' >/etc/calamares/modules/postcfg.conf
 
 		#sed -i 's|initialSwapChoice: none|initialSwapChoice: small|g' /etc/calamares/modules/partition.conf
 
@@ -632,7 +634,7 @@ sequence:
     - show:
         - finished
 
-branding: biglinux
+branding: chili
 
 prompt-install: true
 
@@ -642,7 +644,7 @@ disable-cancel: false
 disable-cancel-during-exec: false
 quit-at-end: false' >/etc/calamares/settings.conf
 
-		touch /etc/calamares/biglinux
+		touch /etc/calamares/chili
 	fi
 
 	# Disable pacman-key populate
@@ -760,7 +762,7 @@ quit-at-end: false' >/etc/calamares/settings.conf
 	}
 	bigbashview \
 		-s 1100x600 \
-		-n $"Install System" \
+		-n $"Instalar Sistema" \
 		-p bbv-calamares \
 		-c transparent \
 		-w frameless \
@@ -791,13 +793,13 @@ quit-at-end: false' >/etc/calamares/settings.conf
 
 			case $? in
 			1) sudo -u "$user" kate /home/"$user"/calamares.log ;;
-			2) sh_calamares_biglinux_send ;;
+			2) sh_calamares_send ;;
 			3) echo "${Closing_file}" ;;
 			esac
 		fi
 	fi
 }
-export -f sh_calamares_biglinux_main
+export -f sh_calamares_main
 
 usage() {
 	cat <<-EOF
@@ -819,4 +821,4 @@ sh_calamares_chili_config
 	printf "%s\n" "${orange}${0##*/} v${_VERSION_}"
 	exit $(($# ? 0 : 1))
 }
-sh_calamares_biglinux_main "$@"
+sh_calamares_main "$@"

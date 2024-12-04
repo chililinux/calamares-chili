@@ -6,7 +6,7 @@ Exec=bbv-calamares
 Icon=icon-big-hd-install
 Terminal=false
 StartupNotify=true
-Categories=Qt;System;Chili Apps;
+Categories=Qt;System;Big Apps;Chili Apps;
 NoDisplay=true
 
 Name[ar]=تثبيت النظام 
