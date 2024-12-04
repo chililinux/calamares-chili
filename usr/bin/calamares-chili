@@ -67,7 +67,7 @@ detect_distro_path() {
 }
 export -f detect_distro_path
 
-function sh_calamares_chili_config() {
+function sh_calamares_config() {
 	#Translation
 	#LANGUAGE=$LANG:en
 	export TEXTDOMAINDIR="/usr/share/locale"
@@ -111,9 +111,9 @@ chamado modo BIOS."
 Para que a instalação seja bem-sucedida, você provavelmente precisará
 alterar a configuração no BIOS para inicializar no modo EFI ou UEFI."
 }
-export -f sh_calamares_chili_config
+export -f sh_calamares_config
 
-function sh_calamares_chili_get_timezone() {
+function sh_calamares_get_timezone() {
 	# Detecta o fuso horário usando ipinfo.io
 	timezone=$(curl -s https://ipinfo.io/timezone)
 
@@ -152,9 +152,9 @@ function sh_calamares_chili_get_timezone() {
 	export LANG
 	source /usr/bin/big-locale-config "$LANGUAGE"
 }
-export -f sh_calamares_chili_get_timezone
+export -f sh_calamares_get_timezone
 
-function sh_calamares_chili_check_limit() {
+function sh_calamares_check_limit() {
 	#	local param_limit="$1"
 	#	local grace_time="$2"
 	local param_limit
@@ -269,7 +269,7 @@ Recomendamos baixar uma versão mais recente.
 		fi
 	fi
 }
-export -f sh_calamares_chili_check_limit
+export -f sh_calamares_check_limit
 
 function sh_calamares_send() {
 	sudo -u "$user" \
@@ -294,7 +294,7 @@ function sh_calamares_send() {
 }
 export -f sh_calamares_send
 
-function sh_calamares_chili_verify_md5sum() {
+function sh_calamares_verify_md5sum() {
 	local f_md5sum_ErrorCode='/tmp/md5sum_big_fail'
 	local f_md5sum_ErrorFileName='/tmp/md5sum_ErrorFileName'
 	local squashfiles=('desktopfs' 'livefs' 'mhwdfs' 'rootfs')
@@ -393,9 +393,9 @@ function sh_calamares_chili_verify_md5sum() {
 		return 1
 	fi
 }
-export -f sh_calamares_chili_verify_md5sum
+export -f sh_calamares_verify_md5sum
 
-function sh_calamares_chili_wait_verify_md5sum() {
+function sh_calamares_wait_verify_md5sum() {
 	# aguarda o teste com md5sum
 	if pgrep -x "chili-verify" >/dev/null; then
 		windowID="$(xprop -root '\t$0' _NET_ACTIVE_WINDOW | cut -f 2)"
@@ -827,7 +827,7 @@ usage() {
 	EOF
 }
 
-sh_calamares_chili_config
+sh_calamares_config
 [[ "$1" = @(-H|-h|help|-help|--help) ]] && {
   usage
   exit $(($# ? 0 : 1))
