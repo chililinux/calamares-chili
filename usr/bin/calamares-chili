@@ -7,8 +7,9 @@
 #
 #  Created: 2020/01/11
 #  Altered: ter 03 dez 2024 22:25:10 -04
+#  Updated: qua 01 jan 2025 17:45:40 -04
 #
-#  Copyright (c) 2023-2024, Vilmar Catafesta <vcatafesta@gmail.com>
+#  Copyright (c) 2023-2025, Vilmar Catafesta <vcatafesta@gmail.com>
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -600,18 +601,35 @@ userShell:       /bin/bash
 passwordRequirements:
     nonempty: true" >/etc/calamares/modules/users.conf
 
-		echo '---
-keyrings:
-    - archlinux
-    - manjaro
-    - biglinux
-    - community
-    - chili' >/etc/calamares/modules/postcfg.conf
+# Clean Postcfg
+#echo '---
+#keyrings:
+#    - archlinux
+#    - manjaro
+#    - biglinux
+#    - community
+#    - chili' >/etc/calamares/modules/postcfg.conf
 
-		#sed -i 's|initialSwapChoice: none|initialSwapChoice: small|g' /etc/calamares/modules/partition.conf
+# Adiciona todas as chaves, exceto pubring.gpg e trustdb.gpg, ao arquivo de configuração do postcfg
+keyrings_file="/etc/calamares/modules/postcfg.conf"
+keyrings_dir="/usr/share/pacman/keyrings"
 
-		# General configuration
-		echo '---
+# Clean postcfg
+# Define o cabeçalho do arquivo de configuração
+echo '---
+keyrings:' > "$keyrings_file"
+
+# Percorre os arquivos no diretório e adiciona os nomes ao arquivo de configuração
+for keyfile in "$keyrings_dir"/*.gpg; do
+  keybase=$(basename "$keyfile" .gpg)
+  if [[ "$keybase" != "pubring" && "$keybase" != "trustdb" ]]; then
+    echo "    - $keybase" >> "$keyrings_file"
+  fi
+done
+#sed -i 's|initialSwapChoice: none|initialSwapChoice: small|g' /etc/calamares/modules/partition.conf
+
+# General configuration
+echo '---
 modules-search: [ local ]
 
 sequence:
